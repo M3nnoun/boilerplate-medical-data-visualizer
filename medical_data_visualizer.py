@@ -4,30 +4,33 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # 1
-df = None
+df = pd.read_csv('medical_examination.csv')
 
 # 2
-df['overweight'] = None
+df['overweight'] = df.apply(lambda row: 1 if row['weight']/(row['height']/100)**2 > 25 else 0,axis=1).astype('uint8')
 
 # 3
-
+def normalize(value):
+    return 1 if value > 1 else 0 
+df['cholesterol']=df['cholesterol'].apply(normalize).astype('uint8')
+df['gluc']=df['gluc'].apply(normalize).astype('uint8')
 
 # 4
 def draw_cat_plot():
     # 5
-    df_cat = None
-
-
+    columns = [
+      'active',
+      'alco',
+      'cholesterol',
+      'gluc',
+      'overweight',
+      'smoke'
+    ]
+    df_cat = pd.melt(df, id_vars=["cardio"], value_vars=columns)
     # 6
-    df_cat = None
-    
-
-    # 7
-
-
-
+    df_cat = df_cat.reset_index().groupby(['variable', 'cardio', 'value']).agg('count').rename(columns={'index': 'total'}).reset_index()
     # 8
-    fig = None
+    fig = sns.catplot(data=df_cat, kind='bar', x='variable',y='total', hue='value', col='cardio').fig
 
 
     # 9
@@ -38,23 +41,35 @@ def draw_cat_plot():
 # 10
 def draw_heat_map():
     # 11
-    df_heat = None
+    df_heat = df[
+        (df['ap_lo'] <= df['ap_hi'])
+        & (df['height'] >= df['height'].quantile(0.025))
+        & (df['height'] <= df['height'].quantile(0.975))
+        & (df['weight'] >= df['weight'].quantile(0.025))
+        & (df['weight'] <= df['weight'].quantile(0.975))
+    ]
 
     # 12
-    corr = None
+    corr = df_heat.corr()
 
     # 13
-    mask = None
+    mask = np.zeros_like(corr)
+    mask[np.triu_indices_from(mask)] = True
 
 
 
     # 14
-    fig, ax = None
+    fig, ax = plt.subplots(figsize=(12,6))
+
 
     # 15
 
-
-
+    sns.heatmap(data=corr,
+            annot=True, fmt='.1f',
+            mask=mask,
+            vmin=-0.5,
+            vmax=0.5,
+            ax=ax)
     # 16
     fig.savefig('heatmap.png')
     return fig
